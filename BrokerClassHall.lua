@@ -1,9 +1,10 @@
 -- Broker [Class Hall]
 -- Description: Broker plug-in to open your Order Hall
 -- Author: r1fT
--- Version: 1.0.0.70100
+-- Version: 1.0.1.70100
 
 LDB = LibStub:GetLibrary("LibDataBroker-1.1")	
+local ClassHallProfile = UnitName("player").."-"..GetRealmName()
 local LDBClassHall = LDB:NewDataObject("Class Hall", 
 {
 	type = "data source", 
@@ -11,6 +12,28 @@ local LDBClassHall = LDB:NewDataObject("Class Hall",
 	OnClick = function(frame,button)
 		if button == "LeftButton" then
 			GarrisonLandingPage_Toggle()
+		end
+		if button == "RightButton" then
+			ClassHallInitDB()
+			menu = {
+				{ text = "Broker_ClassHall", isTitle = true },
+				{ text = "\n", disabled = true }
+				}
+				for name, _ in pairs(BrokerClassHall.profiles) do
+					local info = {};
+					info.text = name;
+					if name == ClassHallProfile then 	
+						info.checked = true;						
+					else
+						info.checked = false;
+					end
+					info.func = function()
+						ClassHallProfile = name
+					end
+					tinsert(menu, info)
+				end
+			local menuFrame = CreateFrame("Frame", "ExampleMenuFrame", UIParent, "UIDropDownMenuTemplate")
+			EasyMenu(menu, menuFrame, "cursor", 0 , 0, "MENU");
 		end
 	end
 })
@@ -27,6 +50,157 @@ f:RegisterEvent("GARRISON_TALENT_COMPLETE")
 f:RegisterEvent("GARRISON_TALENT_UPDATE")
 f:RegisterEvent("GARRISON_SHOW_LANDING_PAGE")
 
+function ClassHallInitDB()
+	if type(BrokerClassHall) ~= "table" then
+		BrokerClassHall = {}
+	end
+	if type(BrokerClassHall.profiles) ~= "table" then
+		BrokerClassHall.profiles = {}
+	end
+	if type(BrokerClassHall.ignores) ~= "table" then
+		BrokerClassHall.ignores = {}
+	end
+	if type(BrokerClassHall.profiles[ClassHallProfile]) ~= "table" then
+		BrokerClassHall.profiles[ClassHallProfile] = {}
+	end
+	for name, missions in pairs(BrokerClassHall.profiles) do
+		for i, mission in ipairs(missions) do
+			if type(mission) == "table" and not mission.missionEndTime then
+				mission.missionEndTime = mission.timeComplete
+			end
+		end
+	end
+	
+end
+
+function ClassHallSaveToonData()
+	ClassHallInitDB()
+	local ClassHallProfile_Save = UnitName("player").."-"..GetRealmName()
+	local currencyId = C_Garrison.GetCurrencyTypes(LE_GARRISON_TYPE_7_0)
+	local follower_categoryInfo = {}
+	do
+		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
+		follower_categoryInfo = C_Garrison.GetClassSpecCategoryInfo(LE_FOLLOWER_TYPE_GARRISON_7_0)
+		C_Garrison.RequestClassSpecCategoryInfo(LE_FOLLOWER_TYPE_GARRISON_7_0)
+	end
+	local mission_categoryInfo = {}
+	do
+		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
+		mission_categoryInfo = C_Garrison.GetInProgressMissions(LE_FOLLOWER_TYPE_GARRISON_7_0)
+	end
+	local research_categoryInfo = {}
+	do
+		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
+		research_categoryInfo = C_Garrison.GetLooseShipments(C_Garrison.GetLandingPageGarrisonType(LE_GARRISON_TYPE_7_0))
+	end
+	local talent_categoryInfo = {}
+	do
+		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
+		talent_categoryInfo = C_Garrison.GetTalentTrees(LE_GARRISON_TYPE_7_0, select(C_Garrison.GetLandingPageGarrisonType(LE_GARRISON_TYPE_7_0), UnitClass("player")))
+	end
+	local currency_categoryInfo = {}
+	do
+		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
+		currency_categoryInfo = GetCurrencyInfo(currencyId)
+	end
+	GetCurrencyInfo(currencyId)
+	wipe(BrokerClassHall.profiles[ClassHallProfile_Save])
+	if follower_categoryInfo ~= nil then
+		if BrokerClassHall.profiles[ClassHallProfile_Save].follower ~= table then
+			BrokerClassHall.profiles[ClassHallProfile_Save].follower = {}
+		else
+			wipe(BrokerClassHall.profiles[ClassHallProfile_Save].follower)
+		end
+		for _, info in ipairs(follower_categoryInfo) do
+			tinsert(BrokerClassHall.profiles[ClassHallProfile_Save].follower, info)
+		end
+	end
+	if mission_categoryInfo ~= nil then
+		if BrokerClassHall.profiles[ClassHallProfile_Save].mission ~= table then
+			BrokerClassHall.profiles[ClassHallProfile_Save].mission = {}
+		else
+			wipe(BrokerClassHall.profiles[ClassHallProfile_Save].mission)
+		end
+		for _, info in ipairs(mission_categoryInfo) do
+			tinsert(BrokerClassHall.profiles[ClassHallProfile_Save].mission, info)
+		end
+	end
+	if research_categoryInfo ~= nil then
+		if BrokerClassHall.profiles[ClassHallProfile_Save].research ~= table then
+			BrokerClassHall.profiles[ClassHallProfile_Save].research = {}
+		else
+			wipe(BrokerClassHall.profiles[ClassHallProfile_Save].research)
+		end
+		for _, info in ipairs(research_categoryInfo) do
+			local info
+			local name, texture, shipmentCapacity, shipmentsReady, shipmentsTotal, creationTime, duration, timeleftString, itemName, itemTexture, _, itemID
+			for k, v in pairs(C_Garrison.GetLooseShipments(3) or {}) do
+				name, texture, shipmentCapacity, shipmentsReady, shipmentsTotal, creationTime, duration, timeleftString, itemName, itemTexture, _, itemID = C_Garrison.GetLandingPageShipmentInfoByContainerID(v)
+				if itemID == 139390 and creationTime and duration and name then
+					if not info then
+						info = {rewards = {{}}}
+					end
+					info.isArtifact = true
+					info.name = name
+					info.missionEndTime = creationTime + duration
+					if GetServerTime() >= info.missionEndTime then
+						info.isComplete = true
+						info.missionEndTime = nil
+						shipmentsReady = shipmentsReady + 1
+						if shipmentsReady > shipmentsTotal then
+							shipmentsReady = shipmentsTotal
+						end
+					elseif shipmentsReady > 0 then
+						info.isComplete = true
+						info.missionEndTime = nil
+					else
+						info.isComplete = nil
+					end
+					info.artifactReady = shipmentsReady
+					info.artifactTotal = shipmentsTotal
+					info.followerTypeID = LE_FOLLOWER_TYPE_GARRISON_7_0
+					info.typeIcon = texture
+					info.rewards[1].itemID = itemID
+					info.rewards[1].quantity = 1
+					tinsert(BrokerClassHall.profiles[ClassHallProfile_Save].research, info)
+					break
+				end
+			end
+		end
+	end
+	if talent_categoryInfo ~= nil then
+		if BrokerClassHall.profiles[ClassHallProfile].talent ~= table then
+			BrokerClassHall.profiles[ClassHallProfile].talent = {}
+		else
+			wipe(BrokerClassHall.profiles[ClassHallProfile].talent)
+		end
+		for _, info in ipairs(talent_categoryInfo) do
+			tinsert(BrokerClassHall.profiles[ClassHallProfile].talent, info)
+		end
+	end
+	if talent_categoryInfo ~= nil then
+		if BrokerClassHall.profiles[ClassHallProfile].talent ~= table then
+			BrokerClassHall.profiles[ClassHallProfile].talent = {}
+		else
+			wipe(BrokerClassHall.profiles[ClassHallProfile].talent)
+		end
+		for _, info in ipairs(talent_categoryInfo) do
+			tinsert(BrokerClassHall.profiles[ClassHallProfile].talent, info)
+		end
+	end
+	if currency_categoryInfo ~= nil then
+		if BrokerClassHall.profiles[ClassHallProfile].currency ~= table then
+			BrokerClassHall.profiles[ClassHallProfile].currency = {}
+		else
+			wipe(BrokerClassHall.profiles[ClassHallProfile].currency)
+		end
+		local currency, amount, icon = GetCurrencyInfo(currencyId)
+		tinsert(BrokerClassHall.profiles[ClassHallProfile].currency, currency)
+		tinsert(BrokerClassHall.profiles[ClassHallProfile].currency, amount)
+		tinsert(BrokerClassHall.profiles[ClassHallProfile].currency, icon)
+	end
+end
+
 function LDBClassHall.OnEnter(self)
 	GameTooltip:SetOwner(self, "ANCHOR_NONE")
     GameTooltip:SetPoint("TOPLEFT", self, "BOTTOMLEFT")
@@ -42,101 +216,60 @@ end
 
 	
 function ClassHallMakeToolTip(self)
-	self:AddLine("Class Hall")
+	ClassHallSaveToonData()
+	self:AddLine("Class Hall |cFF0000FF[|cFFFFFFFF"..ClassHallProfile.."|cFF0000FF]")
 	self:AddLine("\n")
-	
-	local currencyId = C_Garrison.GetCurrencyTypes(LE_GARRISON_TYPE_7_0)
 	local NoResearch = true
 	local currencyId = C_Garrison.GetCurrencyTypes(LE_GARRISON_TYPE_7_0)
-	local follower_categoryInfo = {}
-	do
-		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
-		follower_categoryInfo = C_Garrison.GetClassSpecCategoryInfo(LE_FOLLOWER_TYPE_GARRISON_7_0)
-		C_Garrison.RequestClassSpecCategoryInfo(LE_FOLLOWER_TYPE_GARRISON_7_0)
-	end
-	local mission_categoryInfo = {}
-	do
-		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
-		mission_categoryInfo = C_Garrison.GetInProgressMissions(LE_FOLLOWER_TYPE_GARRISON_7_0)
-	end
-	local research_categoryInfo = {}
-	do
-		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
-		research_categoryInfo = C_Garrison.GetLooseShipments(C_Garrison.GetLandingPageGarrisonType(LE_GARRISON_TYPE_7_0))
-	end
-	local talent_categoryInfo = {}
-	do
-		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
-		talent_categoryInfo = C_Garrison.GetTalentTrees(LE_GARRISON_TYPE_7_0, select(C_Garrison.GetLandingPageGarrisonType(LE_GARRISON_TYPE_7_0), UnitClass("player")))
-	end
 	if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
 
-		local currency, amount, icon = GetCurrencyInfo(currencyId)
+		local currency = BrokerClassHall.profiles[ClassHallProfile].currency[1]
+		local amount = BrokerClassHall.profiles[ClassHallProfile].currency[2]
+		local icon = BrokerClassHall.profiles[ClassHallProfile].currency[3]
 		self:AddDoubleLine(" |T"..icon..":0:0:0:2:64:64:4:60:4:60|t |cFFFFE000"..currency..":", "|cFFFFFFFF"..amount,1,1,1, 1,1,1)
 
-		if #follower_categoryInfo > 0 then
+		if #BrokerClassHall.profiles[ClassHallProfile].follower > 0 then
 			self:AddLine("\n")
-			for _, info in ipairs(follower_categoryInfo) do
-				self:AddDoubleLine("|T"..info.icon..":0|t |cFFFFE000"..info.name..":", "|cFFFFFFFF"..info.count.."/"..info.limit,1,1,1, 1,1,1)
+			for _, info in ipairs(BrokerClassHall.profiles[ClassHallProfile].follower) do
+				self:AddDoubleLine("|T"..info.icon..":0|t |cFFFFFFFF"..info.name..":", "|cFFFFFFFF"..info.count.."/"..info.limit,1,1,1, 1,1,1)
 			end
 		end
 		
-		if #mission_categoryInfo > 0 then
+		if #BrokerClassHall.profiles[ClassHallProfile].mission > 0 then
 			self:AddLine("\n")
 			self:AddLine("|cFF00FF00Current Missions")
-			for _, info in ipairs(mission_categoryInfo) do
-				if info.timeLeftSeconds > 0 then
-					self:AddDoubleLine("|cFFFFE000"..info.name..":", "|cFFFFFFFF"..info.timeLeft,1,1,1, 1,1,1)
+			for _, info in ipairs(BrokerClassHall.profiles[ClassHallProfile].mission) do
+				local timeremaining = info.missionEndTime-GetServerTime()
+				if timeremaining > 0 then
+					local missiontimeremaining = ClassHallTimeFormat(timeremaining)
+					self:AddDoubleLine("|cFFFFE000"..info.name..":", "|cFFFFFFFF"..missiontimeremaining,1,1,1, 1,1,1)
 				else
 					self:AddDoubleLine("|cFFFFE000"..info.name..":", "|cFF00FF00Compleated",1,1,1, 1,1,1)
 				end
 			end
 		end
 		
-		if #research_categoryInfo > 0 then
+		if #BrokerClassHall.profiles[ClassHallProfile].research > 0 then
 			self:AddLine("\n")
 			self:AddLine("|cFF00FF00Current Research")
-			local ResearchString0
-			local ResearchString1
-			for _, info in ipairs(research_categoryInfo) do
-				research_string  = string.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",C_Garrison.GetLandingPageShipmentInfoByContainerID(info))
-				research_table = mysplit(research_string,",")				
-				for key, value in pairs(research_table) do
-					if key == 1 then
-						ResearchString0 = value
-					end
-					if key == 8 then
-						ResearchString1 = value
-					end
-					if ResearchString0 ~= nil then
-						if ResearchString1 ~= nil then
-							self:AddDoubleLine("|cFFFFE000"..ResearchString0..":", "|cFFFFFFFF"..ResearchString1,1,1,1, 1,1,1)
-							ResearchString0 = nil
-							ResearchString1 = nil
-						end
-					end
+			for _, info in ipairs(BrokerClassHall.profiles[ClassHallProfile].research) do
+				local timeremaining = info.missionEndTime-GetServerTime()
+				if timeremaining > 0 then
+					local missiontimeremaining = ClassHallTimeFormat(timeremaining)
+					self:AddDoubleLine("|cFFFFE000"..info.name.." ("..info.artifactReady.."/"..info.artifactTotal.."):", "|cFFFFFFFF"..missiontimeremaining,1,1,1, 1,1,1)
 				end
 			end
 		end
 		
-		if #talent_categoryInfo > 0 then
-			for _, tree in ipairs(talent_categoryInfo) do
+		if #BrokerClassHall.profiles[ClassHallProfile].talent > 0 then
+			for _, tree in ipairs(BrokerClassHall.profiles[ClassHallProfile].talent) do
 				for _, info in ipairs(tree) do
 					if info.selected == true then
 						if info.researched == false then
 							NoResearch = false
-							local talenttimeremaing_days = string.format("%.1d", info.researchTimeRemaining/86400)
-							local talenttimeremaing_hours = string.format("%.1d", (info.researchTimeRemaining-(talenttimeremaing_days*86400))/3600)
-							if tonumber(talenttimeremaing_days) > 0 then
-								self:AddDoubleLine("|cFFFFE000"..info.name..":", "|cFFFFFFFF"..talenttimeremaing_days.." day "..talenttimeremaing_hours.." hr",1,1,1, 1,1,1)
-							else
-								talenttimeremaing_min = string.format("%.1d", (info.researchTimeRemaining-(talenttimeremaing_hours*3600))/60)
-								if tonumber(talenttimeremaing_hours) > 0 then
-									self:AddDoubleLine("|cFFFFE000"..info.name..":", "|cFFFFFFFF"..talenttimeremaing_hours.." hr "..talenttimeremaing_min.." min",1,1,1, 1,1,1)
-								else
-									self:AddDoubleLine("|cFFFFE000"..info.name..":", "|cFFFFFFFF"..talenttimeremaing_min.." min",1,1,1, 1,1,1)
-								end
-							end
+							local timeremaining = (info.researchDuration+info.researchStaretTime)-GetServerTime()
+							local missiontimeremaining = ClassHallTimeFormat(timeremaining)
+							self:AddDoubleLine("|cFFFFE000"..info.name..":", "|cFFFFFFFF"..missiontimeremaining,1,1,1, 1,1,1)
 						end
 					end
 					if info.tier == 5 then
@@ -150,35 +283,36 @@ function ClassHallMakeToolTip(self)
 				end
 			end
 		end
+
 	self:AddLine("\n")			
 	self:AddLine("|cff00ff00Left click for Class Hall report")
+	self:AddLine("|cff00ff00Right click to view other characters")
+	return 
 end
 
 function LoadClassHallLDB()
 	ClassIcon = UnitClass("player")
 	ClassIcon = ClassIcon:gsub("%s+", "")
 	LDBClassHall.icon = "Interface\\Addons\\BrokerClassHall\\Icons\\"..ClassIcon;
-	local follower_categoryInfo = {}
-	do
-		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
-		follower_categoryInfo = C_Garrison.GetClassSpecCategoryInfo(LE_FOLLOWER_TYPE_GARRISON_7_0)
-		C_Garrison.RequestClassSpecCategoryInfo(LE_FOLLOWER_TYPE_GARRISON_7_0)
+end
+
+function ClassHallTimeFormat(remaining)
+	local seconds = remaining % 60
+	remaining = (remaining - seconds) / 60
+	local minutes = remaining % 60
+	remaining = (remaining - minutes) / 60
+	local hours = remaining % 24
+	local days = (remaining - hours) / 24
+	if days > 0 then
+		time_formated = days.." day "..hours.." hr"
+	else
+		if hours > 0 then
+			time_formated = hours.." hr "..minutes.." min"
+		else
+			time_formated = minutes.." min"
+		end
 	end
-	local mission_categoryInfo = {}
-	do
-		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
-		mission_categoryInfo = C_Garrison.GetInProgressMissions(LE_FOLLOWER_TYPE_GARRISON_7_0)
-	end
-	local research_categoryInfo = {}
-	do
-		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
-		research_categoryInfo = C_Garrison.GetLooseShipments(C_Garrison.GetLandingPageGarrisonType(LE_GARRISON_TYPE_7_0))
-	end
-	local talent_categoryInfo = {}
-	do
-		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
-		talent_categoryInfo = C_Garrison.GetTalentTrees(LE_GARRISON_TYPE_7_0, select(C_Garrison.GetLandingPageGarrisonType(LE_GARRISON_TYPE_7_0), UnitClass("player")))
-	end
+	return time_formated
 end
 
 function mysplit(inputstr, sep)

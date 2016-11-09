@@ -2,5 +2,6 @@
 ## Title: Broker [Class Hall]
 ## Notes: Broker plugin that opens your Class Hall
 ## Author: r1fT
-## Version: 1.0.0.70100
+## Version: 1.0.1.70100
+## SavedVariables: BrokerClassHall
 BrokerClassHall.xml
