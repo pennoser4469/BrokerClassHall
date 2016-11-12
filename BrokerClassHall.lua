@@ -1,11 +1,11 @@
 -- Broker [Class Hall]
 -- Description: Broker plug-in to open your Order Hall
 -- Author: r1fT
--- Version: 1.0.1.70100
+-- Version: 1.0.4.70100
 
 LDB = LibStub:GetLibrary("LibDataBroker-1.1")	
 local ClassHallProfile = UnitName("player").."-"..GetRealmName()
-local LDBClassHall = LDB:NewDataObject("Class Hall", 
+local LDBClassHall = LDB:NewDataObject("Broker_|cff008cffClass Hall|r", 
 {
 	type = "data source", 
 	text = "", 
@@ -16,7 +16,7 @@ local LDBClassHall = LDB:NewDataObject("Class Hall",
 		if button == "RightButton" then
 			ClassHallInitDB()
 			menu = {
-				{ text = "Broker_ClassHall", isTitle = true },
+				{ text = "Broker_|cff008cffClassHall|r", isTitle = true },
 				{ text = "\n", disabled = true }
 				}
 				for name, _ in pairs(BrokerClassHall.profiles) do
@@ -41,14 +41,10 @@ local LDBClassHall = LDB:NewDataObject("Class Hall",
 local f = CreateFrame("Frame")
 f:SetScript("OnEvent", function()
 	LoadClassHallLDB()
+	ClassHallSaveToonData()
 end) 
 f:RegisterEvent("PLAYER_ENTERING_WORLD")
-f:RegisterEvent("GARRISON_FOLLOWER_CATEGORIES_UPDATED")
-f:RegisterEvent("GARRISON_FOLLOWER_ADDED")
-f:RegisterEvent("GARRISON_FOLLOWER_REMOVED")
-f:RegisterEvent("GARRISON_TALENT_COMPLETE")
-f:RegisterEvent("GARRISON_TALENT_UPDATE")
-f:RegisterEvent("GARRISON_SHOW_LANDING_PAGE")
+f:RegisterEvent("PLAYER_LEAVING_WORLD")
 
 function ClassHallInitDB()
 	if type(BrokerClassHall) ~= "table" then
@@ -83,6 +79,11 @@ function ClassHallSaveToonData()
 		follower_categoryInfo = C_Garrison.GetClassSpecCategoryInfo(LE_FOLLOWER_TYPE_GARRISON_7_0)
 		C_Garrison.RequestClassSpecCategoryInfo(LE_FOLLOWER_TYPE_GARRISON_7_0)
 	end
+	local followershipment_categoryInfo = {}
+	do
+		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
+		followershipment_categoryInfo = C_Garrison.GetFollowerShipments(LE_GARRISON_TYPE_7_0)
+	end
 	local mission_categoryInfo = {}
 	do
 		if C_Garrison.GetLandingPageGarrisonType() ~= LE_GARRISON_TYPE_7_0 then return end
@@ -105,6 +106,7 @@ function ClassHallSaveToonData()
 	end
 	GetCurrencyInfo(currencyId)
 	wipe(BrokerClassHall.profiles[ClassHallProfile_Save])
+	
 	if follower_categoryInfo ~= nil then
 		if BrokerClassHall.profiles[ClassHallProfile_Save].follower ~= table then
 			BrokerClassHall.profiles[ClassHallProfile_Save].follower = {}
@@ -113,6 +115,24 @@ function ClassHallSaveToonData()
 		end
 		for _, info in ipairs(follower_categoryInfo) do
 			tinsert(BrokerClassHall.profiles[ClassHallProfile_Save].follower, info)
+		end
+	end
+	if followershipment_categoryInfo ~= nil then
+		if BrokerClassHall.profiles[ClassHallProfile_Save].followershipment ~= table then
+			BrokerClassHall.profiles[ClassHallProfile_Save].followershipment = {}
+		else
+			wipe(BrokerClassHall.profiles[ClassHallProfile_Save].followershipment)
+		end
+		local info
+		local name, texture, shipmentCapacity, shipmentsReady, shipmentsTotal, creationTime, duration, timeleftString, itemName, itemTexture, _, itemID
+		for _, v in ipairs(followershipment_categoryInfo) do
+			name, texture, shipmentCapacity, shipmentsReady, shipmentsTotal, creationTime, duration, timeleftString, itemName, itemTexture, _, itemID = C_Garrison.GetLandingPageShipmentInfoByContainerID(v)
+			info = {}
+			info.name = name
+			info.shipmentsReady = shipmentsReady
+			info.shipmentsTotal = shipmentsTotal
+			info.missionEndTime = creationTime + duration
+			tinsert(BrokerClassHall.profiles[ClassHallProfile_Save].followershipment, info)
 		end
 	end
 	if mission_categoryInfo ~= nil then
@@ -145,14 +165,12 @@ function ClassHallSaveToonData()
 					info.missionEndTime = creationTime + duration
 					if GetServerTime() >= info.missionEndTime then
 						info.isComplete = true
-						info.missionEndTime = nil
 						shipmentsReady = shipmentsReady + 1
 						if shipmentsReady > shipmentsTotal then
 							shipmentsReady = shipmentsTotal
 						end
 					elseif shipmentsReady > 0 then
 						info.isComplete = true
-						info.missionEndTime = nil
 					else
 						info.isComplete = nil
 					end
@@ -169,35 +187,35 @@ function ClassHallSaveToonData()
 		end
 	end
 	if talent_categoryInfo ~= nil then
-		if BrokerClassHall.profiles[ClassHallProfile].talent ~= table then
-			BrokerClassHall.profiles[ClassHallProfile].talent = {}
+		if BrokerClassHall.profiles[ClassHallProfile_Save].talent ~= table then
+			BrokerClassHall.profiles[ClassHallProfile_Save].talent = {}
 		else
-			wipe(BrokerClassHall.profiles[ClassHallProfile].talent)
+			wipe(BrokerClassHall.profiles[ClassHallProfile_Save].talent)
 		end
 		for _, info in ipairs(talent_categoryInfo) do
-			tinsert(BrokerClassHall.profiles[ClassHallProfile].talent, info)
+			tinsert(BrokerClassHall.profiles[ClassHallProfile_Save].talent, info)
 		end
 	end
 	if talent_categoryInfo ~= nil then
-		if BrokerClassHall.profiles[ClassHallProfile].talent ~= table then
-			BrokerClassHall.profiles[ClassHallProfile].talent = {}
+		if BrokerClassHall.profiles[ClassHallProfile_Save].talent ~= table then
+			BrokerClassHall.profiles[ClassHallProfile_Save].talent = {}
 		else
-			wipe(BrokerClassHall.profiles[ClassHallProfile].talent)
+			wipe(BrokerClassHall.profiles[ClassHallProfile_Save].talent)
 		end
 		for _, info in ipairs(talent_categoryInfo) do
-			tinsert(BrokerClassHall.profiles[ClassHallProfile].talent, info)
+			tinsert(BrokerClassHall.profiles[ClassHallProfile_Save].talent, info)
 		end
 	end
 	if currency_categoryInfo ~= nil then
-		if BrokerClassHall.profiles[ClassHallProfile].currency ~= table then
-			BrokerClassHall.profiles[ClassHallProfile].currency = {}
+		if BrokerClassHall.profiles[ClassHallProfile_Save].currency ~= table then
+			BrokerClassHall.profiles[ClassHallProfile_Save].currency = {}
 		else
-			wipe(BrokerClassHall.profiles[ClassHallProfile].currency)
+			wipe(BrokerClassHall.profiles[ClassHallProfile_Save].currency)
 		end
 		local currency, amount, icon = GetCurrencyInfo(currencyId)
-		tinsert(BrokerClassHall.profiles[ClassHallProfile].currency, currency)
-		tinsert(BrokerClassHall.profiles[ClassHallProfile].currency, amount)
-		tinsert(BrokerClassHall.profiles[ClassHallProfile].currency, icon)
+		tinsert(BrokerClassHall.profiles[ClassHallProfile_Save].currency, currency)
+		tinsert(BrokerClassHall.profiles[ClassHallProfile_Save].currency, amount)
+		tinsert(BrokerClassHall.profiles[ClassHallProfile_Save].currency, icon)
 	end
 end
 
@@ -249,14 +267,27 @@ function ClassHallMakeToolTip(self)
 			end
 		end
 		
-		if #BrokerClassHall.profiles[ClassHallProfile].research > 0 then
-			self:AddLine("\n")
-			self:AddLine("|cFF00FF00Current Research")
-			for _, info in ipairs(BrokerClassHall.profiles[ClassHallProfile].research) do
-				local timeremaining = info.missionEndTime-GetServerTime()
-				if timeremaining > 0 then
+		self:AddLine("\n")
+		self:AddLine("|cFF00FF00Current Research")
+		
+		if #BrokerClassHall.profiles[ClassHallProfile].followershipment > 0 then
+			for _, info in ipairs(BrokerClassHall.profiles[ClassHallProfile].followershipment) do
+				if info.missionEndTime ~= 0 then
+					local timeremaining = info.missionEndTime-GetServerTime()
 					local missiontimeremaining = ClassHallTimeFormat(timeremaining)
-					self:AddDoubleLine("|cFFFFE000"..info.name.." ("..info.artifactReady.."/"..info.artifactTotal.."):", "|cFFFFFFFF"..missiontimeremaining,1,1,1, 1,1,1)
+					GameTooltip:AddDoubleLine("|cFFFFE000"..info.name.." ("..info.shipmentsReady.."/"..info.shipmentsTotal.."):", "|cFFFFFFFF"..missiontimeremaining,1,1,1, 1,1,1)
+				end
+			end
+		end	
+		
+		if #BrokerClassHall.profiles[ClassHallProfile].research > 0 then
+			for _, info in ipairs(BrokerClassHall.profiles[ClassHallProfile].research) do
+				if info.missionEndTime ~= nil then
+					if info.missionEndTime > 0 then
+						local timeremaining = info.missionEndTime-GetServerTime()
+						local missiontimeremaining = ClassHallTimeFormat(timeremaining)
+						GameTooltip:AddDoubleLine("|cFFFFE000"..info.name.." ("..info.artifactReady.."/"..info.artifactTotal.."):", "|cFFFFFFFF"..missiontimeremaining,1,1,1, 1,1,1)
+					end
 				end
 			end
 		end
@@ -267,7 +298,7 @@ function ClassHallMakeToolTip(self)
 					if info.selected == true then
 						if info.researched == false then
 							NoResearch = false
-							local timeremaining = (info.researchDuration+info.researchStaretTime)-GetServerTime()
+							local timeremaining = (info.researchDuration+info.researchStartTime)-GetServerTime()
 							local missiontimeremaining = ClassHallTimeFormat(timeremaining)
 							self:AddDoubleLine("|cFFFFE000"..info.name..":", "|cFFFFFFFF"..missiontimeremaining,1,1,1, 1,1,1)
 						end
