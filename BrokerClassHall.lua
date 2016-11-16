@@ -1,7 +1,7 @@
 -- Broker [Class Hall]
 -- Description: Broker plug-in to open your Order Hall
 -- Author: r1fT
--- Version: 1.0.4.70100
+-- Version: 1.0.5.70100
 
 LDB = LibStub:GetLibrary("LibDataBroker-1.1")	
 local ClassHallProfile = UnitName("player").."-"..GetRealmName()
