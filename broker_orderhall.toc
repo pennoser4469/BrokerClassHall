@@ -1,0 +1,7 @@
+## Interface: 70100
+## Title: Broker [|cff008cffClass Hall|r] |cff00aa00@project-version@|r
+## Notes: Broker plugin that opens your Class Hall
+## Author: r1fT
+## Version: @project-version@
+## SavedVariables: BrokerClassHall
+broker_orderhall.xml

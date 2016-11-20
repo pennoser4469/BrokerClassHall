@@ -1,0 +1,22 @@
+v1.1.0.70100
+				- Github Migration.
+				
+v1.0.5.70100
+				- Minor Bug Fixes.
+
+v1.0.4.70100
+				- Bug Fix on Artifact Research.
+
+v1.0.3.70100
+				- Added tracking for followers.
+				- Minor Bug fix for Order Resources.
+
+v1.0.2.70100
+				- Minor Bug fix on research timer.
+
+v1.0.1.70100 
+				- Updated to allow multiple character tracking 
+				- Major Code Design Changes and Optimization
+
+v1.0.0.70100 
+				- Initial Release.

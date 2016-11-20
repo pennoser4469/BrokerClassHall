@@ -1,7 +1,7 @@
 -- Broker [Class Hall]
 -- Description: Broker plug-in to open your Order Hall
 -- Author: r1fT
--- Version: 1.0.5.70100
+-- Version: @project-version@
 
 LDB = LibStub:GetLibrary("LibDataBroker-1.1")	
 local ClassHallProfile = UnitName("player").."-"..GetRealmName()
@@ -324,7 +324,7 @@ end
 function LoadClassHallLDB()
 	ClassIcon = UnitClass("player")
 	ClassIcon = ClassIcon:gsub("%s+", "")
-	LDBClassHall.icon = "Interface\\Addons\\BrokerClassHall\\Icons\\"..ClassIcon;
+	LDBClassHall.icon = "Interface\\Addons\\broker_orderhall\\Icons\\"..ClassIcon;
 end
 
 function ClassHallTimeFormat(remaining)
