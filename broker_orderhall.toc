@@ -1,7 +1,7 @@
 ## Interface: 70100
-## Title: Broker [|cff008cffClass Hall|r] |cff00aa00v1.1.0.70100|r
+## Title: Broker [|cff008cffClass Hall|r] |cff00aa00v1.1.1.70100|r
 ## Notes: Broker plugin that opens your Class Hall
 ## Author: r1fT
-## Version: v1.1.0.70100
+## Version: v1.1.1.70100
 ## SavedVariables: BrokerClassHall
 broker_orderhall.xml
