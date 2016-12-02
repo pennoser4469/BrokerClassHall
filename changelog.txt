@@ -1,5 +1,5 @@
-v1.1.1.70100 - WIP
-				- Minor Bug Fixes.
+v1.1.1.70100
+				- Typo Error on line 268 fixed.
 
 v1.1.0.70100
 				- Github Migration.

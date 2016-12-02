@@ -265,7 +265,7 @@ function ClassHallMakeToolTip(self)
 					local missiontimeremaining = ClassHallTimeFormat(timeremaining)
 					self:AddDoubleLine("|cFFFFE000"..info.name..":", "|cFFFFFFFF"..missiontimeremaining,1,1,1, 1,1,1)
 				else
-					self:AddDoubleLine("|cFFFFE000"..info.name..":", "|cFF00FF00Compleated",1,1,1, 1,1,1)
+					self:AddDoubleLine("|cFFFFE000"..info.name..":", "|cFF00FF00Completed",1,1,1, 1,1,1)
 				end
 			end
 		end
