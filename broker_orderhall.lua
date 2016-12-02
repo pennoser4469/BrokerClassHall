@@ -1,12 +1,12 @@
 -- Broker [Class Hall]
 -- Description: Broker plug-in to open your Order Hall
 -- Author: r1fT
--- Version: v1.1.1.70100
--- Hash: @project-hash@
+-- Version: v1.1.3.70100 - Beta
+-- Hash: 27f501e0234d77695b27cc57a18570bac00abd05
 
 
 
-LDB = LibStub:GetLibrary("LibDataBroker-1.1")	
+LDB = LibStub:GetLibrary("LibDataBroker-1.1")
 local ClassHallProfile = UnitName("player").."-"..GetRealmName()
 local LDBClassHall = LDB:NewDataObject("Broker_|cff008cffClass Hall|r", 
 {
@@ -35,6 +35,23 @@ local LDBClassHall = LDB:NewDataObject("Broker_|cff008cffClass Hall|r",
 					end
 					tinsert(menu, info)
 				end
+				if BrokerClassHall.chbuttonstate == "true" then
+					local info = {};
+					info.text = "Hide Class Hall Button";
+					info.func = function()
+						BrokerClassHall.chbuttonstate = "false"
+						HideClassHallButton()
+					end
+					tinsert(menu, info)
+				else
+					local info = {};
+					info.text = "Show Class Hall Button";
+					info.func = function()
+						BrokerClassHall.chbuttonstate = "true"
+						HideClassHallButton()
+					end
+					tinsert(menu, info)
+				end
 			local menuFrame = CreateFrame("Frame", "ExampleMenuFrame", UIParent, "UIDropDownMenuTemplate")
 			EasyMenu(menu, menuFrame, "cursor", 0 , 0, "MENU");
 		end
@@ -45,6 +62,7 @@ local f = CreateFrame("Frame")
 f:SetScript("OnEvent", function()
 	LoadClassHallLDB()
 	ClassHallSaveToonData()
+	HideClassHallButton()
 end) 
 f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:RegisterEvent("PLAYER_LEAVING_WORLD")
@@ -58,6 +76,9 @@ function ClassHallInitDB()
 	end
 	if type(BrokerClassHall.ignores) ~= "table" then
 		BrokerClassHall.ignores = {}
+	end
+	if BrokerClassHall.chbuttonstate == nil then
+		BrokerClassHall.chbuttonstate = "true"
 	end
 	if type(BrokerClassHall.profiles[ClassHallProfile]) ~= "table" then
 		BrokerClassHall.profiles[ClassHallProfile] = {}
@@ -328,6 +349,16 @@ function LoadClassHallLDB()
 	ClassIcon = UnitClass("player")
 	ClassIcon = ClassIcon:gsub("%s+", "")
 	LDBClassHall.icon = "Interface\\Addons\\broker_orderhall\\Icons\\"..ClassIcon;
+end
+
+function HideClassHallButton()
+	if BrokerClassHall.chbuttonstate == "false" then
+		C_Timer.After(2, function()
+		GarrisonLandingPageMinimapButton:Hide()
+		end)
+	else
+		GarrisonLandingPageMinimapButton:Show()
+	end
 end
 
 function ClassHallTimeFormat(remaining)
