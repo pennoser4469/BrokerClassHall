@@ -1,8 +1,8 @@
 -- Broker [Class Hall]
 -- Description: Broker plug-in to open your Order Hall
 -- Author: r1fT
--- Version: v1.1.3.70100 - Beta
--- Hash: 27f501e0234d77695b27cc57a18570bac00abd05
+-- Version: v1.1.3.70100
+-- Hash: @project-hash@
 
 
 
